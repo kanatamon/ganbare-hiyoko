@@ -10,6 +10,7 @@ import {
   isWallets,
   shortenAddress,
   summarizeTaskReport,
+  truncateString,
   wait,
 } from './src/utils';
 
@@ -79,7 +80,7 @@ const options = program.opts();
           taskReport.success = false;
           taskReport.error = error;
           bar?.update({
-            status: `❌ ${error.message}`,
+            status: `❌ ${truncateString(error.message, 20)}`,
           });
         },
         onSuccess: () => {

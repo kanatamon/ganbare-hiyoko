@@ -56,7 +56,7 @@ export function summarizeTaskReport(taskReport: TaskReport) {
   return {
     address: shortenAddress(address),
     goalStatus: success ? '✅' : taskLeftToComplete,
-    failedReason: error ? error.message : 'N/A',
+    failedReason: error ? truncateString(error.message) : 'N/A',
   };
 }
 
@@ -74,4 +74,8 @@ export function isWallets(wallets: unknown): wallets is Wallet[] {
 
 export function isStringArray(arr: unknown): arr is string[] {
   return Array.isArray(arr) && arr.every((item) => typeof item === 'string');
+}
+
+export function truncateString(str: string, maxLength = 50) {
+  return str.length > maxLength ? str.slice(0, maxLength).trim() + '...' : str;
 }
