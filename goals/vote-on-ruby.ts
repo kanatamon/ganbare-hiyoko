@@ -1,6 +1,7 @@
 import invariant from 'tiny-invariant';
 import { ethers } from 'ethers';
 import type { GoalFunctionArgs, PrivateKey } from '../src/types';
+import { wait } from '../src/utils';
 
 type NumberOfVotes = string;
 type GasInGwei = string;
@@ -64,6 +65,7 @@ export default async function voteOnRubyGoal({
     for (let i = 0; i < numberOfVotes; i++) {
       await voteOnRuby(privateKey, gasInGwei);
       callbacks?.onProgress?.(i + 1);
+      await wait(10, 'second');
     }
     callbacks?.onSuccess?.();
   } catch (error) {
