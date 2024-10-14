@@ -32,7 +32,7 @@ $ npm install
 
 ```bash
 $ npm start -- \
-    --goal "./goals/vote-on-ruby.ts 100 0.2" \
+    --goal "vote-on-ruby 100 0.2" \
     --wallets "./wallets.json"
 ```
 
@@ -43,9 +43,9 @@ $ npm start -- \
 
 ```bash
 $ ./ganbare-hiyoko \
-    --goal "./goals/vote-on-ruby.ts 100 0.2" \
-                                    # |   |__ Gas price in Gwei
-                                    # |______ The total number of votes (trx)
+    --goal "vote-on-ruby 100 0.2" \
+                        # |   |__ Gas price in Gwei
+                        # |______ The total number of votes (trx)
     --wallets "./wallets.json"
 ```
 
@@ -53,7 +53,7 @@ $ ./ganbare-hiyoko \
 
 ```bash
 $ ./ganbare-hiyoko \
-    --goal "./goals/vote-on-ruby.ts 100 0.2" \
+    --goal "vote-on-ruby 100 0.2" \
     --wallets "./wallets.json"
 
 $ Output:

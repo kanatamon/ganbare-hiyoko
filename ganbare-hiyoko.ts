@@ -5,7 +5,6 @@ import { Command } from 'commander';
 import cliProgress from 'cli-progress';
 import type { TaskReport } from './src/types';
 import {
-  executeGoal,
   isStringArray,
   isWallets,
   shortenAddress,
@@ -13,6 +12,7 @@ import {
   truncateString,
   wait,
 } from './src/utils';
+import { executeGoal } from './goals/_index';
 
 const DEFAULT_WALLETS_FILE = 'wallets.json';
 
@@ -46,8 +46,8 @@ const options = program.opts();
 
 (async () => {
   invariant(options.goal, 'Goal is required to execute the script');
-  const [pathToGoalFile, ...goalArgs] = options.goal.split(' ');
-  invariant(typeof pathToGoalFile === 'string', 'Invalid goal path');
+  const [goalName, ...goalArgs] = options.goal.split(' ');
+  invariant(typeof goalName === 'string', 'Invalid goal path');
   invariant(isStringArray(goalArgs), 'Invalid goal arguments');
 
   invariant(options.wallets, 'Wallets file is required to execute the script');
@@ -68,7 +68,7 @@ const options = program.opts();
       total: 'uninitialized',
     };
 
-    const task = executeGoal(pathToGoalFile, {
+    const task = executeGoal(goalName, {
       privateKey,
       options: goalArgs,
       callbacks: {

@@ -14,7 +14,9 @@ export function wait(time: number, unit: 'second' | 'minute' | 'hour' | 'day') {
   return new Promise((resolve) => setTimeout(resolve, timeInMs));
 }
 
-// Function to dynamically import the goal module and execute the exported function
+/**
+ * @deprecated Use `executeGoal` in `goals/_index.ts` instead
+ */
 export async function executeGoal(
   pathToFile: string,
   goalArgs: GoalFunctionArgs<string[]>
