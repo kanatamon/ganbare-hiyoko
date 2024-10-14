@@ -25,15 +25,13 @@ Ganbare Hiyoko (がんばれひよこ) means "Do your best, Chick" in Japanese.
 1. Install the dependencies
 
 ```bash
-$ npm install
+npm install
 ```
 
 2. Run the following command to start the program
 
 ```bash
-$ npm start -- \
-    --goal "vote-on-ruby 100 0.2" \
-    --wallets "./wallets.json"
+npm start -- --goal "vote-on-ruby 57 0.23"
 ```
 
 ## Vote on Ruby - Options
@@ -42,11 +40,11 @@ $ npm start -- \
 2. `Arg 2`: Gas price in Gwei
 
 ```bash
-$ ./ganbare-hiyoko \
-    --goal "vote-on-ruby 100 0.2" \
-                        # |   |__ Gas price in Gwei
-                        # |______ The total number of votes (trx)
-    --wallets "./wallets.json"
+./ganbare-hiyoko \
+  --goal "vote-on-ruby 100 0.2" \
+                      # |   |__ Gas price in Gwei
+                      # |______ The total number of votes (trx)
+  --wallets "./wallets.json"
 ```
 
 ## The Goal
