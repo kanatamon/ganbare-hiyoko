@@ -3,6 +3,8 @@ import fs from 'fs';
 import inquirer from 'inquirer';
 import path from 'path';
 import invariant from 'tiny-invariant';
+import cliProgress from 'cli-progress';
+import { printTable } from 'console-table-printer';
 import {
   getTrailblazersUserRank,
   isWallets,
@@ -13,8 +15,6 @@ import {
 } from './src/utils';
 import type { TaskReport, TrailblazersUserRank, Wallet } from './src/types';
 import { startJobForVoteOnRuby } from './src/jobs/vote-on-ruby';
-import cliProgress from 'cli-progress';
-import { printTable } from 'console-table-printer';
 
 async function selectWallets(wallets: Wallet[]) {
   const { isSelectedAllWallet } = await inquirer.prompt([

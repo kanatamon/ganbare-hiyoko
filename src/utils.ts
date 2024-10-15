@@ -56,32 +56,6 @@ export function truncateString(str: string, maxLength = 50) {
   return str.length > maxLength ? str.slice(0, maxLength).trim() + '...' : str;
 }
 
-export class RpcProviderRateLimiter {
-  private nextRpcAvailableTime = 0;
-
-  constructor(
-    private rpcUrl: string,
-    private rpcUsageInterval: number = 3000
-  ) {}
-
-  async getRpcProvider() {
-    if (this.nextRpcAvailableTime === 0) {
-      this.nextRpcAvailableTime = Date.now() + this.rpcUsageInterval;
-    } else {
-      const timeToWait = this.nextRpcAvailableTime - Date.now();
-      this.nextRpcAvailableTime += this.rpcUsageInterval;
-      await wait(timeToWait, 'ms');
-    }
-
-    try {
-      const provider = new ethers.JsonRpcProvider(this.rpcUrl);
-      await provider.getBlockNumber(); // Check if provider is working
-      return provider;
-    } catch (error) {
-      return null;
-    }
-  }
-}
 function isTrailblazersUserRank(data: unknown): data is TrailblazersUserRank {
   if (typeof data !== 'object' || data === null) {
     return false;
