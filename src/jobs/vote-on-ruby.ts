@@ -1,10 +1,7 @@
 import invariant from 'tiny-invariant';
 import { ethers } from 'ethers';
-import type { GoalFunctionArgs, PrivateKey } from '../src/types';
-import { RpcProviderRateLimiter, wait } from '../src/utils';
-
-type NumberOfVotes = string;
-type GasInGwei = string;
+import type { Callbacks, GoalFunctionArgs, PrivateKey } from '../types';
+import { RpcProviderRateLimiter, wait } from '../utils';
 
 const CONTRACT_ADDRESS = '0x4D1E2145082d0AB0fDa4a973dC4887C7295e21aB';
 const ABI = [
@@ -29,7 +26,7 @@ const rpcProviderRateLimiter = new RpcProviderRateLimiter(
   RPC_USAGE_INTERVAL
 );
 
-async function voteOnRuby(privateKey: PrivateKey, gasInGwei: GasInGwei) {
+async function voteOnRuby(privateKey: PrivateKey, gasInGwei: string) {
   const provider = await rpcProviderRateLimiter.getRpcProvider();
   invariant(provider, 'Failed to connect to RPC provider');
   const wallet = new ethers.Wallet(privateKey, provider);
@@ -51,17 +48,23 @@ async function voteOnRuby(privateKey: PrivateKey, gasInGwei: GasInGwei) {
   return receipt;
 }
 
-export default async function voteOnRubyGoal({
+export async function startJobForVoteOnRuby({
   privateKey,
   options,
   callbacks,
-}: GoalFunctionArgs<[NumberOfVotes, GasInGwei]>) {
-  const [numberOfVotesRaw, gasInGwei] = options;
+}: {
+  privateKey: PrivateKey;
+  options: {
+    numberOfVotes: number;
+    gasInGwei: string;
+  };
+  callbacks?: Callbacks;
+}) {
+  const { numberOfVotes, gasInGwei } = options;
 
-  const numberOfVotes = Number.parseInt(numberOfVotesRaw);
   invariant(
     !Number.isNaN(numberOfVotes),
-    `Invalid number of votes: ${numberOfVotesRaw}`
+    `Invalid number of votes: ${numberOfVotes}`
   );
   invariant(
     !Number.isNaN(Number.parseFloat(gasInGwei)),

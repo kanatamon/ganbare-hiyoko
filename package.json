@@ -4,7 +4,7 @@
   "description": "Ganbare Hiyoko (がんばれひよこ) means \"Do your best, Chick\" in Japanese.",
   "main": "index.js",
   "scripts": {
-    "start": "tsx ganbare-hiyoko.ts"
+    "start": "tsx cli.ts"
   },
   "keywords": [],
   "author": "",
@@ -19,8 +19,8 @@
   },
   "dependencies": {
     "cli-progress": "^3.12.0",
-    "commander": "^12.1.0",
     "ethers": "^6.13.4",
+    "inquirer": "^12.0.0",
     "tiny-invariant": "^1.3.3",
     "tsx": "^4.19.1"
   }
