@@ -1,7 +1,7 @@
 import invariant from 'tiny-invariant';
 import { ethers } from 'ethers';
+import PQueue from 'p-queue';
 import type { Callbacks, PrivateKey } from '../types';
-import { RpcProviderRateLimiter, wait } from '../utils';
 
 const CONTRACT_ADDRESS = '0x4D1E2145082d0AB0fDa4a973dC4887C7295e21aB';
 const ABI = [
@@ -19,16 +19,11 @@ const ABI = [
 ];
 
 const RPC_URL = `https://rpc.mainnet.taiko.xyz`;
-const RPC_USAGE_INTERVAL = 3000; // 3 seconds, 20 requests per minute
 
-const rpcProviderRateLimiter = new RpcProviderRateLimiter(
-  RPC_URL,
-  RPC_USAGE_INTERVAL
-);
+const votOnRubyQueue = new PQueue({ concurrency: 3 });
 
 async function voteOnRuby(privateKey: PrivateKey, gasInGwei: string) {
-  const provider = await rpcProviderRateLimiter.getRpcProvider();
-  invariant(provider, 'Failed to connect to RPC provider');
+  const provider = new ethers.JsonRpcProvider(RPC_URL);
   const wallet = new ethers.Wallet(privateKey, provider);
   const cEthContract = new ethers.Contract(CONTRACT_ADDRESS, ABI, wallet);
   invariant(cEthContract.vote, 'vote method not found');
@@ -74,8 +69,11 @@ export async function startJobForVoteOnRuby({
 
   try {
     for (let i = 0; i < numberOfVotes; i++) {
-      await voteOnRuby(privateKey, gasInGwei);
-      callbacks?.onProgress?.(i + 1);
+      const task = async () => {
+        await voteOnRuby(privateKey, gasInGwei);
+        callbacks?.onProgress?.(i + 1);
+      };
+      await votOnRubyQueue.add(task);
     }
     callbacks?.onSuccess?.();
   } catch (error) {
