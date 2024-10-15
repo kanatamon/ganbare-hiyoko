@@ -1,15 +1,19 @@
 import path from 'path';
+import { ethers } from 'ethers';
 import type { GoalFunctionArgs, TaskReport, Wallet } from './types';
 
-export function wait(time: number, unit: 'second' | 'minute' | 'hour' | 'day') {
+export function wait(
+  time: number,
+  unit: 'ms' | 'second' | 'minute' | 'hour' | 'day'
+) {
   const timeInMs =
     time *
-    1000 *
     {
-      second: 1,
-      minute: 60,
-      hour: 60 * 60,
-      day: 60 * 60 * 24,
+      ms: 1,
+      second: 1000,
+      minute: 1000 * 60,
+      hour: 1000 * 60 * 60,
+      day: 1000 * 60 * 60 * 24,
     }[unit];
   return new Promise((resolve) => setTimeout(resolve, timeInMs));
 }
@@ -80,4 +84,31 @@ export function isStringArray(arr: unknown): arr is string[] {
 
 export function truncateString(str: string, maxLength = 50) {
   return str.length > maxLength ? str.slice(0, maxLength).trim() + '...' : str;
+}
+
+export class RpcProviderRateLimiter {
+  private nextRpcAvailableTime = 0;
+
+  constructor(
+    private rpcUrl: string,
+    private rpcUsageInterval: number = 3000
+  ) {}
+
+  async getRpcProvider() {
+    if (this.nextRpcAvailableTime === 0) {
+      this.nextRpcAvailableTime = Date.now() + this.rpcUsageInterval;
+    } else {
+      const timeToWait = this.nextRpcAvailableTime - Date.now();
+      this.nextRpcAvailableTime += this.rpcUsageInterval;
+      await wait(timeToWait, 'ms');
+    }
+
+    try {
+      const provider = new ethers.JsonRpcProvider(this.rpcUrl);
+      await provider.getBlockNumber(); // Check if provider is working
+      return provider;
+    } catch (error) {
+      return null;
+    }
+  }
 }
