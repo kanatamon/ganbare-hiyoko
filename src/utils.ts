@@ -1,6 +1,7 @@
 import path from 'path';
 import { ethers } from 'ethers';
-import type { GoalFunctionArgs, TaskReport, Wallet } from './types';
+import type { TaskReport, TrailblazersUserRank, Wallet } from './types';
+import invariant from 'tiny-invariant';
 
 export function wait(
   time: number,
@@ -16,37 +17,6 @@ export function wait(
       day: 1000 * 60 * 60 * 24,
     }[unit];
   return new Promise((resolve) => setTimeout(resolve, timeInMs));
-}
-
-/**
- * @deprecated Use `executeGoal` in `goals/_index.ts` instead
- */
-export async function executeGoal(
-  pathToFile: string,
-  goalArgs: GoalFunctionArgs<string[]>
-) {
-  const absoluteGoalPath = path.resolve(process.cwd(), pathToFile);
-
-  // Import the TypeScript file using tsx
-  try {
-    // Use dynamic import to load the goal module
-    const goalModule = await import(absoluteGoalPath);
-
-    // Check if the module has a default export
-    if (typeof goalModule.default === 'function') {
-      await goalModule.default(goalArgs);
-    } else {
-      console.error('Error: No default export found in the goal module');
-    }
-  } catch (error) {
-    if (error instanceof Error) {
-      console.error(
-        `Failed to import or execute the goal module: ${error.message}`
-      );
-    } else {
-      console.error('Failed to import or execute the goal module');
-    }
-  }
 }
 
 export function shortenAddress(address: string) {
@@ -111,4 +81,53 @@ export class RpcProviderRateLimiter {
       return null;
     }
   }
+}
+function isTrailblazersUserRank(data: unknown): data is TrailblazersUserRank {
+  if (typeof data !== 'object' || data === null) {
+    return false;
+  }
+  const obj = data as Record<string, unknown>;
+  if (typeof obj.rank !== 'number') {
+    return false;
+  }
+  if (typeof obj.address !== 'string') {
+    return false;
+  }
+  if (typeof obj.score !== 'number') {
+    return false;
+  }
+  if (typeof obj.multiplier !== 'number') {
+    return false;
+  }
+  if (typeof obj.totalScore !== 'number') {
+    return false;
+  }
+  if (typeof obj.total !== 'number') {
+    return false;
+  }
+  if (typeof obj.blacklisted !== 'boolean') {
+    return false;
+  }
+  return true;
+}
+
+export async function getTrailblazersUserRank(address: string) {
+  const response = await fetch(
+    `https://trailblazer.mainnet.taiko.xyz/s2/user/rank?address=${address}`,
+    {
+      headers: {
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.93 Safari/537.36',
+      },
+    }
+  );
+  if (!response.ok) {
+    throw new Error(`Failed to fetch data: ${response.statusText}`);
+  }
+  const data = await response.json();
+  invariant(
+    isTrailblazersUserRank(data),
+    'Invalid Trailblazers user rank response'
+  );
+  return data;
 }

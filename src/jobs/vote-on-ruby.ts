@@ -1,6 +1,6 @@
 import invariant from 'tiny-invariant';
 import { ethers } from 'ethers';
-import type { Callbacks, GoalFunctionArgs, PrivateKey } from '../types';
+import type { Callbacks, PrivateKey } from '../types';
 import { RpcProviderRateLimiter, wait } from '../utils';
 
 const CONTRACT_ADDRESS = '0x4D1E2145082d0AB0fDa4a973dC4887C7295e21aB';

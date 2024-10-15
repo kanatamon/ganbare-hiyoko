@@ -4,15 +4,17 @@ import inquirer from 'inquirer';
 import path from 'path';
 import invariant from 'tiny-invariant';
 import {
+  getTrailblazersUserRank,
   isWallets,
   shortenAddress,
   summarizeTaskReport,
   truncateString,
   wait,
 } from './src/utils';
-import type { TaskReport, Wallet } from './src/types';
+import type { TaskReport, TrailblazersUserRank, Wallet } from './src/types';
 import { startJobForVoteOnRuby } from './src/jobs/vote-on-ruby';
 import cliProgress from 'cli-progress';
+import { printTable } from 'console-table-printer';
 
 async function selectWallets(wallets: Wallet[]) {
   const { isSelectedAllWallet } = await inquirer.prompt([
@@ -146,11 +148,27 @@ async function startVoteOnRubyApplication(wallets: Wallet[]) {
   console.log('\n====================');
   console.log('Task reports:');
   console.log(`Date: ${new Date().toLocaleString()}`);
-  console.table(taskReports.map(summarizeTaskReport));
+  printTable(taskReports.map(summarizeTaskReport));
 }
 
 async function startViewTrailblazersDashboardApplication(wallets: Wallet[]) {
-  await selectWallets(wallets);
+  const selectedWallets = await selectWallets(wallets);
+
+  const trailblazersUserRanks: TrailblazersUserRank[] = [];
+  for (const { address } of selectedWallets) {
+    const userRank = await getTrailblazersUserRank(address);
+    trailblazersUserRanks.push(userRank);
+    await wait(250, 'ms');
+  }
+
+  printTable(
+    trailblazersUserRanks.map((userRank) => ({
+      address: shortenAddress(userRank.address),
+      rank: userRank.rank.toLocaleString(),
+      score: Math.floor(userRank.totalScore).toLocaleString(),
+      multiplier: `x${userRank.multiplier.toFixed(2)}`,
+    }))
+  );
 }
 
 function startApplication(name: string, payload: { wallets: Wallet[] }) {

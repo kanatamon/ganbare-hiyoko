@@ -7,17 +7,6 @@ export type Callbacks = {
   onInit?: (total: number) => void;
 };
 
-export type GoalFunctionArgs<Options extends string[]> = {
-  privateKey: PrivateKey;
-  options: Options;
-  callbacks?: {
-    onFail?: (error: Error) => void;
-    onSuccess?: () => void;
-    onProgress?: (progress: number) => void;
-    onInit?: (total: number) => void;
-  };
-};
-
 export type TaskReport = {
   address: string;
   success: boolean;
@@ -29,4 +18,13 @@ export type TaskReport = {
 export type Wallet = {
   address: string;
   privateKey: string;
+};
+export type TrailblazersUserRank = {
+  rank: number;
+  address: string;
+  score: number;
+  multiplier: number;
+  totalScore: number;
+  total: number;
+  blacklisted: boolean;
 };
