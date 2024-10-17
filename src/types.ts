@@ -8,6 +8,7 @@ export type Callbacks = {
 };
 
 export type TaskReport = {
+  name?: string;
   address: string;
   success: boolean;
   error?: Error;
@@ -16,9 +17,11 @@ export type TaskReport = {
 };
 
 export type Wallet = {
+  name?: string;
   address: string;
   privateKey: string;
 };
+
 export type TrailblazersUserRank = {
   rank: number;
   address: string;
@@ -27,4 +30,13 @@ export type TrailblazersUserRank = {
   totalScore: number;
   total: number;
   blacklisted: boolean;
+};
+
+export type PaginationResponse<Item extends Record<string, unknown>> = {
+  items: Item[];
+};
+
+export type TrailblazersUserHistoryItem = {
+  points: number;
+  date: number;
 };

@@ -4,12 +4,17 @@ import inquirer from 'inquirer';
 import path from 'path';
 import invariant from 'tiny-invariant';
 import cliProgress from 'cli-progress';
-import { printTable } from 'console-table-printer';
+import { Table } from 'console-table-printer';
 import {
+  formatDisplayNumber,
+  getTrailblazersUserHistory,
   getTrailblazersUserRank,
+  isSameUTCDay,
   isWallets,
   shortenAddress,
   summarizeTaskReport,
+  toDate,
+  today,
   truncateString,
   wait,
 } from './src/utils';
@@ -96,10 +101,11 @@ async function startVoteOnRubyApplication(wallets: Wallet[]) {
 
   const taskReports: TaskReport[] = [];
   const asyncTasks: Promise<void>[] = [];
-  for (const { address, privateKey } of selectedWallets) {
+  for (const { name, address, privateKey } of selectedWallets) {
     let bar: cliProgress.SingleBar | undefined;
 
     const taskReport: TaskReport = {
+      name,
       address,
       success: false,
       progress: 0,
@@ -147,28 +153,97 @@ async function startVoteOnRubyApplication(wallets: Wallet[]) {
 
   console.log('\n====================');
   console.log('Task reports:');
-  console.log(`Date: ${new Date().toLocaleString()}`);
-  printTable(taskReports.map(summarizeTaskReport));
+  console.log(`Locale Date: ${new Date().toLocaleString()}`);
+  console.log(`UTC Date: ${new Date().toUTCString()}`);
+  const table = new Table({
+    columns: [
+      { name: 'No', alignment: 'right' },
+      { name: 'Name', alignment: 'left' },
+      { name: 'Address', alignment: 'center' },
+      { name: 'Status', alignment: 'center' },
+      { name: 'Note', alignment: 'left' },
+    ],
+  });
+  taskReports.forEach((taskReport, index) => {
+    const { name, address, success, progress, total, error } = taskReport;
+    const taskLeftToComplete =
+      total === 'uninitialized'
+        ? 'uninitialized'
+        : `${total - progress} trx to go`;
+    table.addRow({
+      No: index + 1,
+      Name: name ?? 'N/A',
+      Address: address,
+      Status: success ? '✅' : taskLeftToComplete,
+      Note: error ? truncateString(error.message) : 'N/A',
+    });
+  });
+  table.printTable();
 }
 
 async function startViewTrailblazersDashboardApplication(wallets: Wallet[]) {
   const selectedWallets = await selectWallets(wallets);
 
-  const trailblazersUserRanks: TrailblazersUserRank[] = [];
-  for (const { address } of selectedWallets) {
-    const userRank = await getTrailblazersUserRank(address);
-    trailblazersUserRanks.push(userRank);
+  const trailblazersUsers: (TrailblazersUserRank & {
+    name: Wallet['name'];
+    dailyPointsEarned: number;
+    isMaxDailyPointsEarned: boolean;
+  })[] = [];
+  for (const { name, address } of selectedWallets) {
+    const [userRank, userHistoryItems] = await Promise.all([
+      getTrailblazersUserRank(address),
+      getTrailblazersUserHistory(address),
+    ]);
+    const dailyPointsEarned = userHistoryItems
+      .filter((item) => isSameUTCDay(toDate(item.date), today()))
+      .reduce((acc, item) => acc + item.points, 0);
+    const isMaxDailyPointsEarned = userHistoryItems
+      .filter((item) => isSameUTCDay(toDate(item.date), today()))
+      .some((item) => item.points === 0);
+
+    trailblazersUsers.push({
+      name,
+      dailyPointsEarned,
+      isMaxDailyPointsEarned,
+      ...userRank,
+    });
     await wait(250, 'ms');
   }
 
-  printTable(
-    trailblazersUserRanks.map((userRank) => ({
-      address: shortenAddress(userRank.address),
-      rank: userRank.rank.toLocaleString(),
-      score: Math.floor(userRank.totalScore).toLocaleString(),
-      multiplier: `x${userRank.multiplier.toFixed(2)}`,
-    }))
-  );
+  const table = new Table({
+    columns: [
+      { name: 'No', alignment: 'right' },
+      { name: 'Name', alignment: 'left' },
+      { name: 'Address', alignment: 'center' },
+      { name: 'Rank', alignment: 'right' },
+      { name: 'Score', alignment: 'right' },
+      { name: 'Multiplier', alignment: 'right' },
+      { name: 'Daily Score', alignment: 'right' },
+      { name: 'Daily Limit?', alignment: 'left' },
+    ],
+  });
+  const MAX_DAILY_POINTS = 57_000;
+  trailblazersUsers.forEach((user, index) => {
+    const remainingDailyPoints = Math.max(
+      0,
+      MAX_DAILY_POINTS - user.dailyPointsEarned
+    );
+    table.addRow({
+      No: index + 1,
+      Name: user.name ?? 'N/A',
+      Address: shortenAddress(user.address),
+      Rank: formatDisplayNumber(user.rank),
+      Score: formatDisplayNumber(user.totalScore),
+      Multiplier: `x${user.multiplier.toFixed(2)}`,
+      'Daily Score': formatDisplayNumber(user.dailyPointsEarned),
+      'Daily Limit?': `${
+        user.isMaxDailyPointsEarned
+          ? '🚨 Max Daily'
+          : `${formatDisplayNumber(remainingDailyPoints)} Points to be earned`
+      }`,
+    });
+  });
+  table.printTable();
 }
 
 function startApplication(name: string, payload: { wallets: Wallet[] }) {
