@@ -8,6 +8,7 @@ import type {
   Wallet,
 } from './types';
 import invariant from 'tiny-invariant';
+import type { DerivedTrailblazersUserRank } from './types';
 
 export function wait(
   time: number,
@@ -178,4 +179,24 @@ export function today() {
 
 export function formatDisplayNumber(number: number) {
   return Math.floor(number).toLocaleString();
+}
+export async function getDerivedTrailblazersUserRank(
+  address: string
+): Promise<DerivedTrailblazersUserRank> {
+  const [userRank, userHistoryItems] = await Promise.all([
+    getTrailblazersUserRank(address),
+    getTrailblazersUserHistory(address),
+  ]);
+  const dailyPointsEarned = userHistoryItems
+    .filter((item) => isSameUTCDay(toDate(item.date), today()))
+    .reduce((acc, item) => acc + item.points, 0);
+  const isMaxDailyPointsEarned = userHistoryItems
+    .filter((item) => isSameUTCDay(toDate(item.date), today()))
+    .some((item) => item.points === 0);
+
+  return {
+    ...userRank,
+    dailyPointsEarned,
+    isMaxDailyPointsEarned,
+  };
 }

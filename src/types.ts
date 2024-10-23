@@ -1,3 +1,5 @@
+import type { TrailblazersUserRank } from './types';
+
 export type PrivateKey = string;
 
 export type Callbacks = {
@@ -39,4 +41,8 @@ export type PaginationResponse<Item extends Record<string, unknown>> = {
 export type TrailblazersUserHistoryItem = {
   points: number;
   date: number;
+};
+export type DerivedTrailblazersUserRank = TrailblazersUserRank & {
+  dailyPointsEarned: number;
+  isMaxDailyPointsEarned: boolean;
 };

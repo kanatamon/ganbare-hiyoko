@@ -7,94 +7,32 @@ import cliProgress from 'cli-progress';
 import { Table } from 'console-table-printer';
 import {
   formatDisplayNumber,
-  getTrailblazersUserHistory,
-  getTrailblazersUserRank,
-  isSameUTCDay,
+  getDerivedTrailblazersUserRank,
   isWallets,
   shortenAddress,
   summarizeTaskReport,
-  toDate,
-  today,
   truncateString,
   wait,
 } from './src/utils';
 import type { TaskReport, TrailblazersUserRank, Wallet } from './src/types';
 import { startJobForVoteOnRuby } from './src/jobs/vote-on-ruby';
-
-async function selectWallets(wallets: Wallet[]) {
-  const { isSelectedAllWallet } = await inquirer.prompt([
-    {
-      type: 'confirm',
-      name: 'isSelectedAllWallet',
-      message: 'Do you want to use all wallets?',
-      default: true,
-    },
-  ]);
-  if (isSelectedAllWallet) {
-    return wallets;
-  }
-  const { wallets: selectedWallets } = await inquirer.prompt([
-    {
-      type: 'checkbox',
-      name: 'wallets',
-      message: 'Select the wallets you want to use:',
-      choices: wallets.map((wallet) => ({
-        name: shortenAddress(wallet.address),
-        value: wallet,
-      })),
-      validate: (answer) => {
-        if (answer.length < 1) {
-          return 'You must choose at least one wallet.';
-        }
-        return true;
-      },
-    },
-  ]);
-  invariant(isWallets(selectedWallets), 'Invalid wallets format');
-  return selectedWallets;
-}
+import {
+  MAX_DAILY_POINTS,
+  promptGasPrice,
+  promptNumberOfVotes,
+  promptWalletSelection,
+} from './src/prompts';
 
 async function startVoteOnRubyApplication(wallets: Wallet[]) {
-  const selectedWallets = await selectWallets(wallets);
-
-  const { numberOfVotes, gasInGwei } = await inquirer.prompt([
-    {
-      type: 'number',
-      name: 'numberOfVotes',
-      message: 'Enter the number of transaction to cast:',
-      default: 57,
-      validate: (input) => {
-        if (typeof input !== 'number') {
-          return 'Invalid number of votes';
-        }
-        if (Number.isNaN(input)) {
-          return 'Invalid number of votes';
-        }
-        if (input < 1) {
-          return 'Number of votes must be at least 1';
-        }
-        return true;
-      },
-    },
-    {
-      type: 'input',
-      name: 'gasInGwei',
-      message: 'Enter the gas price in gwei:',
-      default: '0.23',
-      validate: (input) => {
-        if (Number.isNaN(Number.parseFloat(input))) {
-          return 'Invalid gas price';
-        }
-        return true;
-      },
-    },
-  ]);
+  const selectedWallets = await promptWalletSelection(wallets);
+  const numberOfVotesConfig = await promptNumberOfVotes(selectedWallets);
+  const gasInGwei = await promptGasPrice();
 
   const multibar = new cliProgress.MultiBar(
     {
       clearOnComplete: false,
       hideCursor: true,
-      format: ' {bar} | {address} | {value}/{total} | {status}',
+      format: '{name} | {address} | {bar} | {value}/{total} | {status}',
     },
     cliProgress.Presets.rect
   );
@@ -112,6 +50,9 @@ async function startVoteOnRubyApplication(wallets: Wallet[]) {
       total: 'uninitialized',
     };
 
+    const numberOfVotes =
+      numberOfVotesConfig.find((n) => n.privateKey === privateKey)
+        ?.numberOfVotes ?? 0;
     const task = startJobForVoteOnRuby({
       privateKey,
       options: {
@@ -121,7 +62,10 @@ async function startVoteOnRubyApplication(wallets: Wallet[]) {
       callbacks: {
         onInit: (total) => {
           taskReport.total = total;
-          bar = multibar.create(total, 0, { address: shortenAddress(address) });
+          bar = multibar.create(total, 0, {
+            name: truncateString(name ?? '', 20).padEnd(23, ' '),
+            address: shortenAddress(address),
+          });
         },
         onFail: (error) => {
           taskReport.success = false;
@@ -182,7 +126,7 @@ async function startVoteOnRubyApplication(wallets: Wallet[]) {
 }
 
 async function startViewTrailblazersDashboardApplication(wallets: Wallet[]) {
-  const selectedWallets = await selectWallets(wallets);
+  const selectedWallets = await promptWalletSelection(wallets);
 
   const trailblazersUsers: (TrailblazersUserRank & {
     name: Wallet['name'];
@@ -190,22 +134,9 @@ async function startViewTrailblazersDashboardApplication(wallets: Wallet[]) {
     isMaxDailyPointsEarned: boolean;
   })[] = [];
   for (const { name, address } of selectedWallets) {
-    const [userRank, userHistoryItems] = await Promise.all([
-      getTrailblazersUserRank(address),
-      getTrailblazersUserHistory(address),
-    ]);
-    const dailyPointsEarned = userHistoryItems
-      .filter((item) => isSameUTCDay(toDate(item.date), today()))
-      .reduce((acc, item) => acc + item.points, 0);
-    const isMaxDailyPointsEarned = userHistoryItems
-      .filter((item) => isSameUTCDay(toDate(item.date), today()))
-      .some((item) => item.points === 0);
-
     trailblazersUsers.push({
       name,
-      dailyPointsEarned,
-      isMaxDailyPointsEarned,
-      ...userRank,
+      ...(await getDerivedTrailblazersUserRank(address)),
     });
     await wait(250, 'ms');
   }
@@ -222,7 +153,6 @@ async function startViewTrailblazersDashboardApplication(wallets: Wallet[]) {
       { name: 'Daily Limit?', alignment: 'left' },
     ],
   });
-  const MAX_DAILY_POINTS = 57_000;
   trailblazersUsers.forEach((user, index) => {
     const remainingDailyPoints = Math.max(
       0,
