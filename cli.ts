@@ -8,6 +8,7 @@ import { Table } from 'console-table-printer';
 import {
   formatDisplayNumber,
   getDerivedTrailblazersUserRank,
+  isMatchingAddress,
   isWallets,
   shortenAddress,
   summarizeTaskReport,
@@ -51,7 +52,7 @@ async function startVoteOnRubyApplication(wallets: Wallet[]) {
     };
 
     const numberOfVotes =
-      numberOfVotesConfig.find((n) => n.privateKey === privateKey)
+      numberOfVotesConfig.find((n) => isMatchingAddress(n.address, address))
         ?.numberOfVotes ?? 0;
     const task = startJobForVoteOnRuby({
       privateKey,

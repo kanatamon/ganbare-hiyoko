@@ -180,6 +180,7 @@ export function today() {
 export function formatDisplayNumber(number: number) {
   return Math.floor(number).toLocaleString();
 }
+
 export async function getDerivedTrailblazersUserRank(
   address: string
 ): Promise<DerivedTrailblazersUserRank> {
@@ -199,4 +200,8 @@ export async function getDerivedTrailblazersUserRank(
     dailyPointsEarned,
     isMaxDailyPointsEarned,
   };
+}
+
+export function isMatchingAddress(a: string, b: string) {
+  return a.toLowerCase() === b.toLowerCase();
 }

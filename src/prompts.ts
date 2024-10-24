@@ -2,6 +2,7 @@ import inquirer from 'inquirer';
 import invariant from 'tiny-invariant';
 import {
   getDerivedTrailblazersUserRank,
+  isMatchingAddress,
   isWallets,
   shortenAddress,
 } from './utils';
@@ -44,7 +45,7 @@ export async function promptWalletSelection(wallets: Wallet[]) {
 
 export async function promptNumberOfVotes(
   wallets: Wallet[]
-): Promise<{ privateKey: string; numberOfVotes: number }[]> {
+): Promise<{ address: string; numberOfVotes: number }[]> {
   const { numberOfVotesMode } = await inquirer.prompt([
     {
       type: 'list',
@@ -79,7 +80,7 @@ export async function promptNumberOfVotes(
       },
     ]);
     return wallets.map((wallet) => ({
-      privateKey: wallet.privateKey,
+      address: wallet.address,
       numberOfVotes,
     }));
   }
@@ -111,10 +112,12 @@ export async function promptNumberOfVotes(
     );
 
     return wallets.map((wallet) => {
-      const userRank = userRanks.find((u) => u.address === wallet.address);
+      const userRank = userRanks.find((u) =>
+        isMatchingAddress(u.address, wallet.address)
+      );
       if (!userRank) {
         return {
-          privateKey: wallet.privateKey,
+          address: wallet.address,
           numberOfVotes: 0,
         };
       }
@@ -125,7 +128,7 @@ export async function promptNumberOfVotes(
       );
       const numberOfVotes = Math.ceil(remainingDailyPoints / 1_000);
       return {
-        privateKey: wallet.privateKey,
+        address: wallet.address,
         numberOfVotes,
       };
     });
